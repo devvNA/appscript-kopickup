@@ -209,21 +209,21 @@
 
           const row = document.createElement("div");
           row.className =
-            "bg-coffeeBean/5 border border-coffeeBean/5 p-3 rounded-xl flex flex-col justify-between space-y-2";
+            "bg-white border border-coffeeBean/12 p-3.5 rounded-xl shadow-[0px_4px_12px_rgba(35,24,21,0.03)] flex flex-col justify-between space-y-3 transition hover:border-coffeeBean/20 duration-150";
           row.innerHTML = `
           <div class="flex justify-between items-start">
-            <div class="min-w-0">
+            <div class="min-w-0 pr-2">
               <h4 class="font-bold text-xs text-espressoBlack truncate">${item.name}</h4>
-              <span class="text-[9px] text-coffeeBean/60">Rp ${item.price.toLocaleString("id-ID")}</span>
+              <span class="text-[9px] text-coffeeBean/70 font-semibold">Rp ${item.price.toLocaleString("id-ID")}</span>
             </div>
-            <span class="font-extrabold text-xs text-espressoBlack">Rp ${subtotal.toLocaleString("id-ID")}</span>
+            <span class="font-extrabold text-xs text-coffeeBean shrink-0">Rp ${subtotal.toLocaleString("id-ID")}</span>
           </div>
-          <div class="flex items-center justify-between pt-1">
-            <input type="text" placeholder="Tulis catatan (es batu, dll)..." value="${item.notes}" onchange="updateCartItemNotes('${item.productId}', this.value)" class="flex-grow max-w-[150px] px-2 py-1 bg-creamLatte/50 border border-coffeeBean/10 rounded text-[10px] focus:outline-none focus:bg-creamLatte font-medium">
+          <div class="flex items-center justify-between gap-2 pt-0.5">
+            <input type="text" placeholder="Catatan (es batu, dll)..." value="${item.notes}" onchange="updateCartItemNotes('${item.productId}', this.value)" class="flex-grow max-w-[150px] px-2 py-1.5 bg-[#FCF9F5] border border-coffeeBean/15 rounded text-[10px] text-espressoBlack placeholder:text-coffeeBean/40 focus:outline-none focus:bg-white focus:border-terracotta focus:ring-2 focus:ring-terracotta/10 font-semibold transition">
             <div class="flex items-center space-x-2 shrink-0">
-              <button onclick="adjustCartQty('${item.productId}', -1)" class="w-6 h-6 rounded-full bg-creamLatte border border-coffeeBean/20 flex items-center justify-center text-coffeeBean hover:bg-coffeeBean hover:text-creamLatte transition"><i class="fa-solid fa-minus text-[10px]"></i></button>
-              <span class="font-bold text-xs w-6 text-center">${item.qty}</span>
-              <button onclick="adjustCartQty('${item.productId}', 1)" class="w-6 h-6 rounded-full bg-creamLatte border border-coffeeBean/20 flex items-center justify-center text-coffeeBean hover:bg-coffeeBean hover:text-creamLatte transition"><i class="fa-solid fa-plus text-[10px]"></i></button>
+              <button onclick="adjustCartQty('${item.productId}', -1)" class="w-6 h-6 rounded-full bg-[#FCF9F5] border border-coffeeBean/20 flex items-center justify-center text-coffeeBean hover:bg-coffeeBean hover:text-creamLatte hover:border-coffeeBean transition duration-150 active:scale-90 cursor-pointer"><i class="fa-solid fa-minus text-[9px]"></i></button>
+              <span class="font-bold text-xs w-5 text-center text-espressoBlack">${item.qty}</span>
+              <button onclick="adjustCartQty('${item.productId}', 1)" class="w-6 h-6 rounded-full bg-[#FCF9F5] border border-coffeeBean/20 flex items-center justify-center text-coffeeBean hover:bg-coffeeBean hover:text-creamLatte hover:border-coffeeBean transition duration-150 active:scale-90 cursor-pointer"><i class="fa-solid fa-plus text-[9px]"></i></button>
             </div>
           </div>
         `;
