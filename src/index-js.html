@@ -1,0 +1,94 @@
+<script>
+  var _loadingTimer = null;
+
+  function showLoading(text) {
+    document.getElementById("loading-text").innerText = text;
+    document.getElementById("app-loading").classList.remove("hidden");
+    // Safety timeout: auto-hide loading after 15 seconds
+    clearTimeout(_loadingTimer);
+    _loadingTimer = setTimeout(function () {
+      hideLoading();
+      showMessage("Server tidak merespons. Silakan coba lagi.");
+    }, 15000);
+  }
+
+  function hideLoading() {
+    clearTimeout(_loadingTimer);
+    document.getElementById("app-loading").classList.add("hidden");
+  }
+
+  function showMessage(msg) {
+    var el = document.getElementById("login-message");
+    el.classList.remove("text-forestGreen");
+    el.classList.add("text-red-500");
+    el.innerText = msg || "";
+  }
+
+  function _getErrorMsg(res) {
+    return (
+      res.message || res.error || "Terjadi kesalahan yang tidak diketahui."
+    );
+  }
+
+  function submitLogin() {
+    var email = document.getElementById("login-email").value.trim();
+    var password = document.getElementById("login-password").value;
+    if (!email || !password)
+      return showMessage("Email dan Password wajib diisi!");
+
+    showMessage("");
+    showLoading("Mencocokkan Kredensial...");
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res && res.success) {
+          var url = document.getElementById("myid").href;
+          window.top.location.href =
+            url +
+            (url.indexOf("?") > -1 ? "&" : "?") +
+            "t=" +
+            new Date().getTime();
+        } else {
+          hideLoading();
+          showMessage(_getErrorMsg(res || {}));
+        }
+      })
+      .withFailureHandler(function (err) {
+        hideLoading();
+        showMessage(
+          err && err.message ? err.message : "Koneksi ke server gagal.",
+        );
+      })
+      .rpcProcessLogin(email, password);
+  }
+
+  function submitRegister() {
+    var email = document.getElementById("login-email").value.trim();
+    var password = document.getElementById("login-password").value;
+    if (!email || !password)
+      return showMessage("Email dan Password wajib diisi!");
+
+    showMessage("");
+    showLoading("Mendaftarkan Akun...");
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        hideLoading();
+        if (res && res.success) {
+          var el = document.getElementById("login-message");
+          el.classList.remove("text-red-500");
+          el.classList.add("text-forestGreen");
+          el.innerText = res.message || "Registrasi berhasil!";
+        } else {
+          showMessage(_getErrorMsg(res || {}));
+        }
+      })
+      .withFailureHandler(function (err) {
+        hideLoading();
+        showMessage(
+          err && err.message ? err.message : "Koneksi ke server gagal.",
+        );
+      })
+      .rpcProcessRegister(email, password, "New User");
+  }
+</script>

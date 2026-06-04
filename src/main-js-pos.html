@@ -1,0 +1,428 @@
+<script>
+      //          POS CATALOG & CART LOGIC
+      // ==========================================
+
+      let activeCategoryFilter = "ALL";
+
+      function loadPosCatalog() {
+
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res.success) {
+              STATE.products = res.products;
+
+              // Category list extraction
+              const categories = [
+                "ALL",
+                ...new Set(res.products.map((p) => p.category)),
+              ];
+              drawCategoryBar(categories);
+
+              // Draw catalog
+              drawProductsGrid();
+
+              // Refresh Cart layout
+              drawCartItems();
+            }
+          })
+          .rpcGetProducts();
+      }
+
+      function drawCategoryBar(categories) {
+        const bar = document.getElementById("pos-categories");
+        bar.innerHTML = "";
+
+        categories.forEach((cat) => {
+          const btn = document.createElement("button");
+          btn.className = `px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition border ${activeCategoryFilter === cat ? "bg-coffeeBean text-creamLatte border-coffeeBean shadow" : "bg-creamLatte text-coffeeBean border-coffeeBean/20 hover:border-coffeeBean"}`;
+          btn.innerText = cat === "ALL" ? "☕ Semua Menu" : cat;
+          btn.onclick = () => {
+            activeCategoryFilter = cat;
+            drawCategoryBar(categories);
+            drawProductsGrid();
+          };
+          bar.appendChild(btn);
+        });
+      }
+
+      function drawProductsGrid() {
+        const grid = document.getElementById("pos-products-grid");
+        grid.innerHTML = "";
+
+        // Get search query
+        const searchInput = document.getElementById("pos-search-input");
+        const searchQuery = searchInput ? searchInput.value.toLowerCase() : "";
+
+        const filtered =
+          activeCategoryFilter === "ALL"
+            ? STATE.products
+            : STATE.products.filter((p) => p.category === activeCategoryFilter);
+
+        // Filter only ACTIVE products AND match search query
+        const activeProducts = filtered.filter((p) => {
+          const isActive = p.status === "ACTIVE";
+          const matchesSearch = p.name.toLowerCase().includes(searchQuery);
+          return isActive && matchesSearch;
+        });
+
+        if (activeProducts.length === 0) {
+          grid.innerHTML = `<div class="col-span-full py-8 text-center text-coffeeBean/50">Tidak ada produk yang sesuai.</div>`;
+          return;
+        }
+
+        activeProducts.forEach((product) => {
+          const isOutOfStock = Number(product.stock) <= 0;
+
+          const card = document.createElement("div");
+          card.className = `bg-creamLatte border border-coffeeBean/10 p-4 rounded-card shadow-soft flex flex-col relative overflow-hidden transition group ${isOutOfStock ? "opacity-65" : "hover:shadow-softHover hover:-translate-y-0.5 transform duration-150"}`;
+
+          // Stock Indicator Tag
+          const stockColor = isOutOfStock
+            ? "bg-red-500"
+            : Number(product.stock) < 10
+              ? "bg-terracotta"
+              : "bg-forestGreen";
+          const stockText = isOutOfStock ? "HABIS" : `Stok: ${product.stock}`;
+
+          const imageHtml = product.imageUrl
+            ? `<div class="w-full h-24 sm:h-28 mb-2 rounded overflow-hidden flex items-center justify-center bg-white shrink-0"><img src="${product.imageUrl}" alt="${product.name}" class="object-cover w-full h-full" loading="lazy" onerror="this.style.display='none'"></div>`
+            : ``;
+
+          card.innerHTML = `
+          ${imageHtml}
+          <div class="mb-2 w-full">
+            <h4 class="font-bold text-xs text-espressoBlack group-hover:text-terracotta transition leading-tight break-words">${product.name}</h4>
+            <span class="text-[8px] uppercase tracking-wider text-coffeeBean/50 font-bold mt-1 block leading-tight">${product.category}</span>
+            <div class="mt-2 flex">
+              <span class="px-1.5 py-0.5 rounded text-[8px] font-extrabold text-creamLatte ${stockColor} shadow-inner uppercase tracking-wider">
+                ${stockText}
+              </span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between border-t border-coffeeBean/5 pt-3 mt-auto">
+            <span class="font-extrabold text-sm text-espressoBlack">Rp ${Number(product.price).toLocaleString("id-ID")}</span>
+            <button onclick="addToCart('${product.id}')" ${isOutOfStock ? "disabled" : ""} class="w-8 h-8 rounded-full bg-coffeeBean group-hover:bg-terracotta text-creamLatte flex items-center justify-center shadow active:scale-95 disabled:opacity-50 disabled:bg-coffeeBean transition shrink-0">
+              <i class="fa-solid fa-plus text-xs"></i>
+            </button>
+          </div>
+        `;
+          grid.appendChild(card);
+        });
+      }
+
+      // ==========================================
+      //          POS CART ACTIONS
+      // ==========================================
+
+      function addToCart(productId) {
+        const product = STATE.products.find((p) => p.id === productId);
+        if (!product) return;
+
+        const cartItem = STATE.cart.find(
+          (item) => item.productId === productId,
+        );
+
+        // Verify stock
+        const requestedQty = cartItem ? cartItem.qty + 1 : 1;
+        if (Number(product.stock) < requestedQty) {
+          showSnackbar(
+            `Stok tidak mencukupi untuk ${product.name}. Tersedia: ${product.stock}`,
+          );
+          return;
+        }
+
+        if (cartItem) {
+          cartItem.qty++;
+        } else {
+          STATE.cart.push({
+            productId: productId,
+            name: product.name,
+            price: Number(product.price),
+            qty: 1,
+            notes: "",
+          });
+        }
+
+        drawCartItems();
+      }
+
+      function adjustCartQty(productId, delta) {
+        const cartItem = STATE.cart.find(
+          (item) => item.productId === productId,
+        );
+        if (!cartItem) return;
+
+        const product = STATE.products.find((p) => p.id === productId);
+
+        if (delta > 0) {
+          // Verify stock limits
+          if (Number(product.stock) < cartItem.qty + 1) {
+            showSnackbar(
+              `Stok tidak mencukupi untuk ${product.name}. Tersedia: ${product.stock}`,
+            );
+            return;
+          }
+        }
+
+        cartItem.qty += delta;
+
+        if (cartItem.qty <= 0) {
+          STATE.cart = STATE.cart.filter(
+            (item) => item.productId !== productId,
+          );
+        }
+
+        drawCartItems();
+      }
+
+      function updateCartItemNotes(productId, notes) {
+        const cartItem = STATE.cart.find(
+          (item) => item.productId === productId,
+        );
+        if (cartItem) {
+          cartItem.notes = notes;
+        }
+      }
+
+      function drawCartItems() {
+        const container = document.getElementById("pos-cart-items");
+        container.innerHTML = "";
+
+        let totalAmount = 0;
+        let itemCount = 0;
+
+        if (STATE.cart.length === 0) {
+          container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-center py-12 text-coffeeBean/40"><i class="fa-solid fa-mug-hot text-3xl mb-2"></i><span class="text-xs">Keranjang Belanja Kosong</span></div>`;
+          document.getElementById("pos-cart-count").innerText = `0 Item`;
+          document.getElementById("pos-cart-total").innerText = `Rp 0`;
+          STATE.cashReceived = 0;
+          const cashInput = document.getElementById("cash-received-input");
+          if (cashInput) cashInput.value = "";
+          updateCashPaymentSummary();
+          return;
+        }
+
+        STATE.cart.forEach((item) => {
+          itemCount += item.qty;
+          const subtotal = item.price * item.qty;
+          totalAmount += subtotal;
+
+          const row = document.createElement("div");
+          row.className =
+            "bg-coffeeBean/5 border border-coffeeBean/5 p-3 rounded-xl flex flex-col justify-between space-y-2";
+          row.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div class="min-w-0">
+              <h4 class="font-bold text-xs text-espressoBlack truncate">${item.name}</h4>
+              <span class="text-[9px] text-coffeeBean/60">Rp ${item.price.toLocaleString("id-ID")}</span>
+            </div>
+            <span class="font-extrabold text-xs text-espressoBlack">Rp ${subtotal.toLocaleString("id-ID")}</span>
+          </div>
+          <div class="flex items-center justify-between pt-1">
+            <input type="text" placeholder="Tulis catatan (es batu, dll)..." value="${item.notes}" onchange="updateCartItemNotes('${item.productId}', this.value)" class="flex-grow max-w-[150px] px-2 py-1 bg-creamLatte/50 border border-coffeeBean/10 rounded text-[10px] focus:outline-none focus:bg-creamLatte font-medium">
+            <div class="flex items-center space-x-2 shrink-0">
+              <button onclick="adjustCartQty('${item.productId}', -1)" class="w-6 h-6 rounded-full bg-creamLatte border border-coffeeBean/20 flex items-center justify-center text-coffeeBean hover:bg-coffeeBean hover:text-creamLatte transition"><i class="fa-solid fa-minus text-[10px]"></i></button>
+              <span class="font-bold text-xs w-6 text-center">${item.qty}</span>
+              <button onclick="adjustCartQty('${item.productId}', 1)" class="w-6 h-6 rounded-full bg-creamLatte border border-coffeeBean/20 flex items-center justify-center text-coffeeBean hover:bg-coffeeBean hover:text-creamLatte transition"><i class="fa-solid fa-plus text-[10px]"></i></button>
+            </div>
+          </div>
+        `;
+          container.appendChild(row);
+        });
+
+        document.getElementById("pos-cart-count").innerText =
+          `${itemCount} Item`;
+        document.getElementById("pos-cart-total").innerText =
+          `Rp ${totalAmount.toLocaleString("id-ID")}`;
+        updateCashPaymentSummary();
+      }
+
+      function getCartTotalAmount() {
+        return STATE.cart.reduce(
+          (sum, item) => sum + Number(item.price) * Number(item.qty),
+          0,
+        );
+      }
+
+      function formatCashInput(input) {
+        let val = input.value.replace(/[^0-9]/g, "");
+        if (val) {
+          input.value = Number(val).toLocaleString("id-ID");
+        } else {
+          input.value = "";
+        }
+        updateCashPaymentSummary();
+      }
+
+      function updateCashPaymentSummary() {
+        const input = document.getElementById("cash-received-input");
+        const changeDisplay = document.getElementById("cash-change-display");
+        const changeNote = document.getElementById("cash-change-note");
+        if (!input || !changeDisplay || !changeNote) return;
+
+        const totalAmount = getCartTotalAmount();
+        const rawVal = input.value.replace(/[^0-9]/g, "");
+        const cashReceived = Number(rawVal || 0);
+        const changeAmount = Math.max(cashReceived - totalAmount, 0);
+        STATE.cashReceived = cashReceived;
+
+        changeDisplay.innerText = `Rp ${changeAmount.toLocaleString("id-ID")}`;
+        changeDisplay.classList.toggle(
+          "text-terracotta",
+          cashReceived > 0 && cashReceived < totalAmount,
+        );
+        changeDisplay.classList.toggle(
+          "text-forestGreen",
+          !(cashReceived > 0 && cashReceived < totalAmount),
+        );
+        changeNote.classList.toggle(
+          "hidden",
+          !(cashReceived > 0 && cashReceived < totalAmount),
+        );
+      }
+
+      function setPaymentMethod(method) {
+        STATE.currentPaymentMethod = method;
+        const btnCash = document.getElementById("btn-pay-cash");
+        const btnNonCash = document.getElementById("btn-pay-noncash");
+        const cashPanel = document.getElementById("cash-payment-panel");
+        const activeClass =
+          "py-2 md:py-2.5 bg-coffeeBean text-creamLatte border border-coffeeBean rounded-button font-bold text-[10px] sm:text-xs flex items-center justify-center space-x-1 shadow transition";
+        const inactiveClass =
+          "py-2 md:py-2.5 bg-creamLatte text-coffeeBean border border-coffeeBean/30 hover:border-coffeeBean rounded-button font-bold text-[10px] sm:text-xs flex items-center justify-center space-x-1 transition";
+
+        if (method === "CASH") {
+          btnCash.className = activeClass;
+          btnNonCash.className = inactiveClass;
+          cashPanel.classList.remove("hidden");
+        } else {
+          btnNonCash.className = activeClass;
+          btnCash.className = inactiveClass;
+          cashPanel.classList.add("hidden");
+        }
+        updateCashPaymentSummary();
+      }
+
+      function handleCheckout() {
+        if (STATE.cart.length === 0) {
+          showSnackbar("Keranjang belanja kosong.");
+          return;
+        }
+
+        if (!STATE.activeShift) {
+          showSnackbar("Shift belum dibuka!");
+          return;
+        }
+
+        const totalAmount = getCartTotalAmount();
+        if (
+          STATE.currentPaymentMethod === "CASH" &&
+          STATE.cashReceived < totalAmount
+        ) {
+          showSnackbar(
+            "Nominal uang tunai yang diterima masih kurang dari total bayar.",
+          );
+          document.getElementById("cash-received-input").focus();
+          return;
+        }
+
+        document.getElementById("app-loading").classList.remove("hidden");
+
+        const orderData = {
+          shiftId: STATE.activeShift.id,
+          paymentMethod: STATE.currentPaymentMethod,
+          items: STATE.cart.map((item) => ({
+            productId: item.productId,
+            qty: item.qty,
+          })),
+        };
+
+
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res.success) {
+              // Render printed receipt modal
+              openReceiptModal(res.transaction.id);
+              // Clear cart
+              STATE.cart = [];
+              STATE.cashReceived = 0;
+              document.getElementById("cash-received-input").value = "";
+              drawCartItems();
+
+              // Update stock numbers instantly without reloading from server
+              if (res.stockUpdates) {
+                res.stockUpdates.forEach((update) => {
+                  const p = STATE.products.find(
+                    (p) => p.id === update.productId,
+                  );
+                  if (p) p.stock = update.stock;
+                });
+                drawProductsGrid();
+              } else {
+                loadPosCatalog();
+              }
+            } else {
+              document.getElementById("app-loading").classList.add("hidden");
+              showSnackbar(res.error);
+            }
+          })
+          .rpcCheckoutOrder(orderData, STATE.currentUser);
+      }
+
+      // ==========================================
+      //          RECEIPT PRINT MODAL
+      // ==========================================
+
+      function openReceiptModal(txId) {
+
+        google.script.run
+          .withSuccessHandler((res) => {
+            document.getElementById("app-loading").classList.add("hidden");
+
+            if (res.success && res.details) {
+              const data = res.details;
+
+              document.getElementById("rec-tx-no").innerText =
+                data.transaction.transaction_no;
+              document.getElementById("rec-tx-date").innerText = new Date(
+                data.transaction.created_at,
+              ).toLocaleString("id-ID");
+              document.getElementById("rec-tx-cashier").innerText =
+                data.cashierName;
+              document.getElementById("rec-tx-method").innerText =
+                data.transaction.payment_method === "CASH"
+                  ? "TUNAI (CASH)"
+                  : "NON-TUNAI (QRIS)";
+              document.getElementById("rec-tx-total").innerText =
+                `Rp ${Number(data.transaction.total).toLocaleString("id-ID")}`;
+
+              const list = document.getElementById("rec-items-list");
+              list.innerHTML = "";
+
+              data.items.forEach((item) => {
+                const div = document.createElement("div");
+                div.className = "flex justify-between";
+                div.innerHTML = `
+                <div class="min-w-0 pr-2">
+                  <span class="block">${item.productName}</span>
+                  <span class="text-[10px] text-espressoBlack/60">${item.qty} x Rp ${Number(item.price).toLocaleString("id-ID")}</span>
+                </div>
+                <span class="shrink-0">Rp ${Number(item.subtotal).toLocaleString("id-ID")}</span>
+              `;
+                list.appendChild(div);
+              });
+
+              document
+                .getElementById("modal-receipt")
+                .classList.remove("hidden");
+            }
+          })
+          .rpcGetReceiptDetails(txId);
+      }
+
+      function closeReceiptModal() {
+        document.getElementById("modal-receipt").classList.add("hidden");
+      }
+
+      // ==========================================
+</script>

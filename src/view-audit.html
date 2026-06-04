@@ -1,0 +1,44 @@
+          <!-- PAGE 6: REAL-TIME AUDIT LOG VIEWER -->
+          <div
+            id="page-audit"
+            class="hidden bg-creamLatte border border-coffeeBean/10 p-4 md:p-6 rounded-card shadow-soft"
+          >
+            <div
+              class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-coffeeBean/10 pb-4 mb-4"
+            >
+              <h3
+                class="cormorant-brand text-2xl md:text-3xl font-bold text-coffeeBean"
+              >
+                <i class="fa-solid fa-shield-halved mr-2 text-forestGreen"></i>
+                Audit Trail
+              </h3>
+              <!-- Quick Filter options -->
+              <div class="flex items-center text-xs w-full sm:w-auto">
+                <input
+                  type="text"
+                  id="audit-search-input"
+                  onkeyup="filterAuditLogs()"
+                  placeholder="Cari Aksi / Karyawan..."
+                  class="w-full sm:w-auto px-3 py-2 bg-creamLatte border border-coffeeBean/25 rounded-button focus:outline-none focus:ring-1 focus:ring-coffeeBean"
+                />
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr
+                    class="border-b border-coffeeBean/20 text-coffeeBean/60 uppercase font-semibold"
+                  >
+                    <th class="py-3 px-2">Waktu / Tanggal</th>
+                    <th class="py-3 px-2">Karyawan</th>
+                    <th class="py-3 px-2">Aksi Modifikasi</th>
+                    <th class="py-3 px-2">Model Target</th>
+                    <th class="py-3 px-2">Detail Perubahan</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-table-body">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>

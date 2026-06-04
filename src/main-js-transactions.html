@@ -1,0 +1,116 @@
+<script>
+      //          TRANSACTIONS HISTORY LIST
+      // ==========================================
+
+      function loadTransactionsPage() {
+
+        google.script.run
+          .withSuccessHandler((res) => {
+            document.getElementById("app-loading").classList.add("hidden");
+            if (res.success) {
+              STATE.transactions = res.transactions;
+              drawTransactionsList();
+            }
+          })
+          .withFailureHandler(() => {
+            document.getElementById("app-loading").classList.add("hidden");
+          })
+          .rpcGetTransactions(STATE.currentUser);
+      }
+
+      function drawTransactionsList() {
+        const tbody = document.getElementById("transactions-table-body");
+        tbody.innerHTML = "";
+
+        STATE.transactions.forEach((tx) => {
+          const row = document.createElement("tr");
+          row.className =
+            "border-b border-coffeeBean/10 hover:bg-coffeeBean/5 font-medium";
+
+          // Void/Refund status color tag
+          const isPaid = tx.status === "PAID";
+          const color = isPaid
+            ? "bg-forestGreen/10 text-forestGreen border border-forestGreen/25"
+            : "bg-red-500/10 text-red-500 border border-red-500/25";
+
+          // Check dynamic role whitelist
+          const canVoid = ["OWNER"].includes(STATE.currentUser.role) && isPaid;
+
+          row.innerHTML = `
+          <td class="py-3 px-2 font-mono font-bold text-coffeeBean">${tx.transaction_no}</td>
+          <td class="py-3 px-2 text-coffeeBean/60">${new Date(tx.created_at).toLocaleString("id-ID")}</td>
+          <td class="py-3 px-2">${tx.cashier_name}</td>
+          <td class="py-3 px-2 font-bold">${tx.payment_method}</td>
+          <td class="py-3 px-2 font-bold">Rp ${Number(tx.total).toLocaleString("id-ID")}</td>
+          <td class="py-3 px-2">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${color}">${tx.status}</span>
+          </td>
+          <td class="py-3 px-2 text-right space-x-1.5 whitespace-nowrap">
+            <button onclick="openReceiptModal('${tx.id}')" class="px-2 py-1 bg-coffeeBean/10 hover:bg-coffeeBean/25 text-coffeeBean border border-coffeeBean/20 rounded font-bold">Struk</button>
+            ${canVoid ? `<button onclick="openRefundModal('${tx.id}', '${tx.transaction_no}', 'VOID')" class="px-2 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/25 rounded font-bold">Void</button>` : ""}
+          </td>
+        `;
+          tbody.appendChild(row);
+        });
+      }
+
+      function openRefundModal(id, txNo, actionType) {
+        document.getElementById("rf-tx-id").value = id;
+        document.getElementById("rf-action-type").value = actionType;
+        document.getElementById("rf-tx-no").innerText = txNo;
+        document.getElementById("refund-title").innerText =
+          actionType === "VOID"
+            ? "Batalkan Transaksi (Void)"
+            : "Refund Transaksi";
+        document.getElementById("rf-reason").value = "";
+
+        document.getElementById("modal-refund").classList.remove("hidden");
+      }
+
+      function closeRefundModal() {
+        document.getElementById("modal-refund").classList.add("hidden");
+      }
+
+      function handleRefundSubmit(e) {
+        e.preventDefault();
+
+        const id = document.getElementById("rf-tx-id").value;
+        const actionType = document.getElementById("rf-action-type").value;
+        const reason = document.getElementById("rf-reason").value.trim();
+        const submitButton = document.getElementById("refund-submit-button");
+
+        submitButton.disabled = true;
+        submitButton.classList.add("opacity-70", "cursor-not-allowed");
+        submitButton.innerText = "Memproses...";
+        closeRefundModal();
+
+        google.script.run
+          .withSuccessHandler((res) => {
+            submitButton.disabled = false;
+            submitButton.classList.remove("opacity-70", "cursor-not-allowed");
+            submitButton.innerText = "Konfirmasi Pembatalan";
+            if (res.success) {
+              const tx = STATE.transactions.find((t) => t.id === id);
+              if (tx) tx.status = res.status;
+              drawTransactionsList();
+              showSnackbar("Transaksi berhasil dibatalkan", "success");
+            } else {
+              showSnackbar(res.error, "error");
+            }
+          })
+          .withFailureHandler((err) => {
+            submitButton.disabled = false;
+            submitButton.classList.remove("opacity-70", "cursor-not-allowed");
+            submitButton.innerText = "Konfirmasi Pembatalan";
+            showSnackbar("Terjadi kesalahan sistem: " + err.message, "error");
+          })
+          .rpcVoidOrRefundTransaction(
+            id,
+            actionType,
+            reason,
+            STATE.currentUser,
+          );
+      }
+
+      // ==========================================
+</script>

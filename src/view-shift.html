@@ -1,0 +1,157 @@
+          <!-- PAGE 2: SHIFT MANAGEMENT -->
+          <div id="page-shift" class="hidden">
+            <div class="flex flex-col xl:flex-row gap-4 md:gap-6">
+              <!-- Active Shift Stats -->
+              <div
+                class="flex-grow bg-creamLatte border border-coffeeBean/10 p-4 md:p-6 rounded-card shadow-soft"
+              >
+                <h3
+                  class="cormorant-brand text-3xl font-bold text-coffeeBean border-b border-coffeeBean/10 pb-2 mb-4 flex items-center"
+                >
+                  <i class="fa-solid fa-wallet mr-2 text-terracotta"></i> Shift
+                  Aktif Saat Ini
+                </h3>
+
+                <div
+                  class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-6"
+                >
+                  <div class="bg-coffeeBean/5 p-4 rounded-xl">
+                    <span
+                      class="text-[10px] font-bold text-coffeeBean uppercase tracking-wider"
+                      >Kas Awal Modal</span
+                    >
+                    <p
+                      id="shift-stat-open"
+                      class="text-xl font-bold text-espressoBlack mt-1"
+                    >
+                      Rp 0
+                    </p>
+                  </div>
+                  <div class="bg-coffeeBean/5 p-4 rounded-xl">
+                    <span
+                      class="text-[10px] font-bold text-coffeeBean uppercase tracking-wider"
+                      >Total Penjualan Tunai</span
+                    >
+                    <p
+                      id="shift-stat-cash"
+                      class="text-xl font-bold text-espressoBlack mt-1"
+                    >
+                      Rp 0
+                    </p>
+                  </div>
+                  <div class="bg-coffeeBean/5 p-4 rounded-xl">
+                    <span
+                      class="text-[10px] font-bold text-coffeeBean uppercase tracking-wider"
+                      >Penjualan Non-Tunai</span
+                    >
+                    <p
+                      id="shift-stat-noncash"
+                      class="text-xl font-bold text-espressoBlack mt-1"
+                    >
+                      Rp 0
+                    </p>
+                  </div>
+                  <div
+                    class="bg-coffeeBean/5 p-4 rounded-xl border border-terracotta/25 bg-terracotta/5"
+                  >
+                    <span
+                      class="text-[10px] font-bold text-terracotta uppercase tracking-wider"
+                      >Estimasi Kas Laci</span
+                    >
+                    <p
+                      id="shift-stat-expected"
+                      class="text-xl font-bold text-terracotta mt-1"
+                    >
+                      Rp 0
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  class="space-y-2 text-xs border-t border-coffeeBean/10 pt-4 mb-6"
+                >
+                  <div class="flex justify-between">
+                    <span class="text-coffeeBean/60">Kasir Aktif:</span>
+                    <span id="shift-info-cashier" class="font-bold"
+                      >Loading...</span
+                    >
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-coffeeBean/60">Shift Dibuka Pada:</span>
+                    <span id="shift-info-opened" class="font-medium"
+                      >Loading...</span
+                    >
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-coffeeBean/60">Jumlah Transaksi:</span>
+                    <span id="shift-info-orders" class="font-bold"
+                      >0 Orders</span
+                    >
+                  </div>
+                </div>
+
+                <!-- Close Shift Panel -->
+                <div class="border-t border-coffeeBean/10 pt-6 space-y-4">
+                  <h4 class="font-bold text-espressoBlack text-sm uppercase">
+                    Tutup Shift Kasir
+                  </h4>
+                  <div>
+                    <label
+                      for="close-cash-input"
+                      class="block text-[10px] font-bold uppercase tracking-wider text-coffeeBean mb-1.5"
+                      >Fisik Kas Laci (Masukan Total Uang Fisik)</label
+                    >
+                    <div class="relative">
+                      <span
+                        class="absolute inset-y-0 left-0 pl-3 flex items-center text-coffeeBean/50 text-xs font-bold"
+                        >Rp</span
+                      >
+                      <input
+                        type="text"
+                        id="close-cash-input"
+                        inputmode="numeric"
+                        placeholder="0"
+                        oninput="formatCloseCashInput(this)"
+                        class="w-full pl-9 pr-4 py-2.5 bg-creamLatte border border-coffeeBean/25 rounded-button text-sm font-semibold focus:ring-coffeeBean/50 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onclick="handleCloseShift()"
+                    class="w-full py-3 bg-coffeeBean hover:bg-espressoBlack text-creamLatte font-bold rounded-button text-xs uppercase tracking-wider shadow transition"
+                  >
+                    Konfirmasi Tutup Shift Kasir
+                  </button>
+                </div>
+              </div>
+
+              <!-- Shift History List -->
+              <div
+                class="flex-grow bg-creamLatte border border-coffeeBean/10 p-4 md:p-6 rounded-card shadow-soft"
+              >
+                <h3
+                  class="cormorant-brand text-3xl font-bold text-coffeeBean border-b border-coffeeBean/10 pb-2 mb-4"
+                >
+                  <i class="fa-solid fa-clock-rotate-left mr-2"></i> Rekap Shift
+                  Penjualan
+                </h3>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-xs text-left border-collapse">
+                    <thead>
+                      <tr
+                        class="border-b border-coffeeBean/20 text-coffeeBean/60 uppercase font-semibold"
+                      >
+                        <th class="py-3 px-1">Kasir</th>
+                        <th class="py-3 px-1">Buka / Tutup</th>
+                        <th class="py-3 px-1">Laci Fisik</th>
+                        <th class="py-3 px-1 text-right">Selisih</th>
+                      </tr>
+                    </thead>
+                    <tbody id="shift-history-table">
+                      <!-- Rendered via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>

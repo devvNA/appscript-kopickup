@@ -1,0 +1,140 @@
+<script>
+      // ==========================================
+      //          SHIFT DRAWER CONTROLLERS
+      // ==========================================
+
+      function handleOpenShift() {
+        const openCashInput = document.getElementById("open-cash-input");
+        const openCash = parseCurrencyInput(openCashInput.value);
+        if (openCashInput.value.trim() === "" || openCash < 0) {
+          showSnackbar("Masukkan modal awal kasir.");
+          return;
+        }
+
+        document.getElementById("app-loading").classList.remove("hidden");
+
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res.success) {
+              refreshActiveShiftStatus();
+            } else {
+              document.getElementById("app-loading").classList.add("hidden");
+              showSnackbar(res.error);
+            }
+          })
+          .rpcOpenShift(openCash, STATE.currentUser);
+      }
+
+      function loadShiftsPage() {
+        if (!STATE.activeShift) return;
+
+        // Update ongoing shift cashier details
+        document.getElementById("shift-info-cashier").innerText =
+          STATE.activeShift.cashier_name || STATE.currentUser.name;
+        document.getElementById("shift-info-opened").innerText = new Date(
+          STATE.activeShift.opened_at,
+        ).toLocaleString("id-ID");
+
+        // Fetch live stats for active shift
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res) {
+              document.getElementById("shift-stat-open").innerText =
+                `Rp ${res.openCash.toLocaleString("id-ID")}`;
+              document.getElementById("shift-stat-cash").innerText =
+                `Rp ${res.cashSales.toLocaleString("id-ID")}`;
+              document.getElementById("shift-stat-noncash").innerText =
+                `Rp ${res.nonCashSales.toLocaleString("id-ID")}`;
+              document.getElementById("shift-stat-expected").innerText =
+                `Rp ${res.expectedDrawerCash.toLocaleString("id-ID")}`;
+              document.getElementById("shift-info-orders").innerText =
+                `${res.orderCount} Orders`;
+            }
+          })
+          .withFailureHandler(() => {})
+          .rpcGetActiveShift();
+
+        drawShiftListHistory();
+      }
+
+      function drawShiftListHistory() {
+        const tbody = document.getElementById("shift-history-table");
+        tbody.innerHTML = `
+        <tr>
+          <td colspan="4" class="py-4 text-center text-coffeeBean/50">Memuat histori shift...</td>
+        </tr>
+      `;
+
+        // Let's resolve shifts
+        google.script.run
+          .withSuccessHandler((res) => {
+            tbody.innerHTML = "";
+            if (res.success && res.transactions) {
+              const row = document.createElement("tr");
+              row.className =
+                "border-b border-coffeeBean/10 hover:bg-coffeeBean/5 font-medium";
+              row.innerHTML = `
+              <td class="py-3 px-1 font-bold">${STATE.currentUser.name}</td>
+              <td class="py-3 px-1">Aktif</td>
+              <td class="py-3 px-1">Ongoing</td>
+              <td class="py-3 px-1 text-right text-terracotta">-</td>
+            `;
+              tbody.appendChild(row);
+            }
+          })
+          .rpcGetTransactions(STATE.currentUser);
+      }
+
+      function parseCurrencyInput(value) {
+        return Number(String(value || "").replace(/\D/g, ""));
+      }
+
+      function formatCurrencyField(input) {
+        const rawAmount = parseCurrencyInput(input.value);
+        input.value = rawAmount ? rawAmount.toLocaleString("id-ID") : "";
+      }
+
+      function formatCloseCashInput(input) {
+        formatCurrencyField(input);
+      }
+
+      async function handleCloseShift() {
+        const closeCashInput = document.getElementById("close-cash-input");
+        const closeCash = parseCurrencyInput(closeCashInput.value);
+        if (closeCashInput.value.trim() === "" || closeCash < 0) {
+          showSnackbar("Masukkan jumlah total uang fisik di laci.");
+          return;
+        }
+
+        if (
+          !(await showConfirm(
+            "Apakah Anda yakin ingin menutup shift kasir saat ini? Selisih uang laci kas akan dicatat.",
+            {
+              title: "Tutup Shift Kasir?",
+              confirmText: "Tutup Shift",
+              cancelText: "Cek Lagi",
+            },
+          ))
+        ) {
+          return;
+        }
+
+        document.getElementById("app-loading").classList.remove("hidden");
+
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res.success) {
+              showSnackbar(
+                `Shift Berhasil Ditutup!\nTotal Penjualan: Rp ${res.summary.totalSales.toLocaleString("id-ID")}\nSelisih Laci: Rp ${res.summary.mismatchVariance.toLocaleString("id-ID")} (${res.summary.mismatchVariance >= 0 ? "Surplus" : "Defisit"})`,
+              );
+              STATE.activeShift = null;
+              refreshActiveShiftStatus();
+            } else {
+              document.getElementById("app-loading").classList.add("hidden");
+              showSnackbar(res.error);
+            }
+          })
+          .rpcCloseShift(STATE.activeShift.id, closeCash, STATE.currentUser);
+      }
+
+</script>

@@ -1,0 +1,371 @@
+<script>
+  // ==========================================
+  // CUSTOM UI DIALOGS
+  // ==========================================
+  let snackbarTimeoutId = null;
+  let snackbarHideTimeoutId = null;
+
+  function showSnackbar(message, type = "info") {
+    const snackbar = document.getElementById("app-snackbar");
+    const icon = document.getElementById("app-snackbar-icon");
+    const messageEl = document.getElementById("app-snackbar-message");
+    const variants = {
+      error: {
+        className: "bg-terracotta text-creamLatte",
+        iconClass: "fa-solid fa-circle-exclamation",
+      },
+      success: {
+        className: "bg-forestGreen text-creamLatte",
+        iconClass: "fa-solid fa-circle-check",
+      },
+      info: {
+        className: "bg-espressoBlack text-creamLatte",
+        iconClass: "fa-solid fa-circle-info",
+      },
+    };
+    const variant = variants[type] || variants.info;
+
+    snackbar.className = `fixed left-1/2 top-5 z-[110] flex max-w-[90vw] -translate-x-1/2 -translate-y-6 items-center gap-3 rounded-full px-5 py-3 text-sm font-semibold opacity-0 shadow-soft transition duration-200 ${variant.className}`;
+    icon.className = variant.iconClass;
+    messageEl.textContent = String(message);
+
+    requestAnimationFrame(() => {
+      snackbar.classList.remove("hidden", "-translate-y-6", "opacity-0");
+      snackbar.classList.add("translate-y-0", "opacity-100");
+    });
+
+    if (snackbarTimeoutId) clearTimeout(snackbarTimeoutId);
+    if (snackbarHideTimeoutId) clearTimeout(snackbarHideTimeoutId);
+
+    snackbarTimeoutId = setTimeout(() => {
+      snackbar.classList.remove("translate-y-0", "opacity-100");
+      snackbar.classList.add("-translate-y-6", "opacity-0");
+      snackbarHideTimeoutId = setTimeout(() => {
+        snackbar.classList.add("hidden");
+        snackbar.classList.remove("flex");
+      }, 220);
+    }, 3500);
+  }
+
+  function showConfirm(message, options = {}) {
+    return new Promise((resolve) => {
+      const dialog = document.getElementById("app-confirm-dialog");
+      const card = document.getElementById("app-confirm-card");
+      const titleEl = document.getElementById("app-confirm-title");
+      const messageEl = document.getElementById("app-confirm-message");
+      const okButton = document.getElementById("app-confirm-ok");
+      const cancelButton = document.getElementById("app-confirm-cancel");
+
+      titleEl.textContent = options.title || "Konfirmasi Aksi";
+      messageEl.textContent = String(message);
+      okButton.textContent = options.confirmText || "Lanjutkan";
+      cancelButton.textContent = options.cancelText || "Batal";
+
+      const close = (result) => {
+        dialog.classList.remove("opacity-100");
+        card.classList.remove("scale-100");
+        card.classList.add("scale-95");
+        setTimeout(() => {
+          dialog.classList.add("hidden");
+          dialog.classList.remove("flex");
+        }, 180);
+        okButton.removeEventListener("click", handleConfirm);
+        cancelButton.removeEventListener("click", handleCancel);
+        dialog.removeEventListener("click", handleBackdrop);
+        document.removeEventListener("keydown", handleEscape);
+        resolve(result);
+      };
+
+      const handleConfirm = () => close(true);
+      const handleCancel = () => close(false);
+      const handleBackdrop = (event) => {
+        if (event.target === dialog) close(false);
+      };
+      const handleEscape = (event) => {
+        if (event.key === "Escape") close(false);
+      };
+
+      okButton.addEventListener("click", handleConfirm);
+      cancelButton.addEventListener("click", handleCancel);
+      dialog.addEventListener("click", handleBackdrop);
+      document.addEventListener("keydown", handleEscape);
+
+      dialog.classList.remove("hidden");
+      dialog.classList.add("flex", "opacity-100");
+      requestAnimationFrame(() => {
+        card.classList.remove("scale-95");
+        card.classList.add("scale-100");
+        okButton.focus();
+      });
+    });
+  }
+
+  // VANILLA JS STATE STORE
+  const STATE = {
+    currentUser: null,
+    activeShift: null,
+    products: [],
+    cart: [],
+    currentView: "pos",
+    currentPaymentMethod: "CASH",
+    cashReceived: 0,
+    auditLogs: [],
+    transactions: [],
+    charts: {},
+  };
+
+  // Auto-initialized on load
+  window.addEventListener("DOMContentLoaded", () => {
+    // Step 1. Verify/Init DB server side
+    initDatabaseServerConnection();
+  });
+
+  /**
+   * Triggers initialization of database.
+   */
+  function initDatabaseServerConnection() {
+    google.script.run
+      .withSuccessHandler((res) => {
+        if (res.success) {
+          checkUserSession();
+        } else {
+          showSnackbar("Database Error: " + res.error);
+        }
+      })
+      .withFailureHandler((err) => {
+        showSnackbar("Server Connection Failed: " + err.toString());
+      })
+      .rpcInitDatabase();
+  }
+
+  /**
+   * Checks if user already has an active session.
+   */
+  function checkUserSession() {
+    google.script.run
+      .withSuccessHandler((res) => {
+        document.getElementById("app-loading").classList.add("hidden");
+
+        if (res.success && res.user) {
+          STATE.currentUser = res.user;
+          renderLoggedInApp();
+        } else {
+          // Session invalid - redirect to login
+          var url = document.getElementById("myid").href;
+          window.top.location.href = url + (url.indexOf("?") > -1 ? "&" : "?") + "t=" + new Date().getTime();
+        }
+      })
+      .withFailureHandler((err) => {
+        document.getElementById("app-loading").classList.add("hidden");
+        // On failure, redirect to login
+        var url = document.getElementById("myid").href;
+        window.top.location.href = url + (url.indexOf("?") > -1 ? "&" : "?") + "t=" + new Date().getTime();
+      })
+      .rpcGetCurrentUser();
+  }
+
+  function handleLogout() {
+    document.getElementById("app-loading").classList.remove("hidden");
+    closeMobileSidebar();
+
+    google.script.run
+      .withSuccessHandler(() => {
+        var url = document.getElementById("myid").href;
+        window.top.location.href = url + (url.indexOf("?") > -1 ? "&" : "?") + "t=" + new Date().getTime();
+      })
+      .withFailureHandler((err) => {
+        document.getElementById("app-loading").classList.add("hidden");
+        alert("Gagal logout: " + err.message);
+      })
+      .rpcProcessLogout();
+  }
+
+  // ==========================================
+  //          RENDER LOGGED-IN PLATFORM
+  // ==========================================
+
+  function renderLoggedInApp() {
+    // Show platform view
+    document.getElementById("view-platform").classList.remove("hidden");
+    document.getElementById("view-platform").classList.add("flex");
+    document.body.classList.add("platform-active");
+
+    // Update User Banner info
+    document.getElementById("user-display-name").innerText =
+      STATE.currentUser.name;
+    document.getElementById("user-display-role").innerText =
+      STATE.currentUser.role;
+
+    const initials = STATE.currentUser.name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2);
+    document.getElementById("user-avatar-initials").innerText = initials;
+
+    // Also update mobile topbar avatar
+    const mobileAvatar = document.getElementById("user-avatar-mobile");
+    if (mobileAvatar) mobileAvatar.innerText = initials;
+
+    // Draw role-specific sidebar navigation
+    drawSidebarNavigation();
+
+    // Check active cashier shift status
+    refreshActiveShiftStatus();
+  }
+
+  function drawSidebarNavigation() {
+    const nav = document.getElementById("sidebar-nav");
+    nav.innerHTML = "";
+
+    const role = STATE.currentUser.role;
+
+    const links = [
+      {
+        id: "pos",
+        name: "Penjualan (POS)",
+        icon: "fa-cash-register",
+        roles: ["OWNER", "CASHIER"],
+      },
+      {
+        id: "shift",
+        name: "Shift & Kasir",
+        icon: "fa-wallet",
+        roles: ["OWNER", "CASHIER"],
+      },
+      {
+        id: "inventory",
+        name: "Menu & Stok",
+        icon: "fa-mug-hot",
+        roles: ["OWNER"],
+      },
+      {
+        id: "transactions",
+        name: "Riwayat Transaksi",
+        icon: "fa-receipt",
+        roles: ["OWNER", "CASHIER"],
+      },
+      {
+        id: "reports",
+        name: "Dashboard Owner",
+        icon: "fa-chart-pie",
+        roles: ["OWNER"],
+      },
+      {
+        id: "audit",
+        name: "Audit & Kepatuhan",
+        icon: "fa-shield-halved",
+        roles: ["OWNER"],
+      },
+    ];
+
+    links.forEach((link) => {
+      if (link.roles.includes(role)) {
+        const btn = document.createElement("button");
+        btn.id = `nav-${link.id}`;
+        btn.className = `w-full flex items-center space-x-3 px-3 md:px-4 py-2.5 md:py-3 rounded-button text-xs font-semibold hover:bg-coffeeBean/40 hover:text-creamLatte transition duration-150 ${STATE.currentView === link.id ? "bg-coffeeBean text-creamLatte" : "text-creamLatte/70"}`;
+        btn.onclick = () => {
+          switchView(link.id);
+          closeMobileSidebar();
+        };
+
+        btn.innerHTML = `<i class="fa-solid ${link.icon} text-sm w-5 text-center"></i> <span>${link.name}</span>`;
+        nav.appendChild(btn);
+      }
+    });
+  }
+
+  function switchView(viewId) {
+    STATE.currentView = viewId;
+
+    // Highlight active sidebar navigation link
+    document.querySelectorAll("#sidebar-nav button").forEach((btn) => {
+      btn.classList.remove("bg-coffeeBean", "text-creamLatte");
+      btn.classList.add("text-creamLatte/70");
+    });
+
+    const activeBtn = document.getElementById(`nav-${viewId}`);
+    if (activeBtn) {
+      activeBtn.classList.add("bg-coffeeBean", "text-creamLatte");
+      activeBtn.classList.remove("text-creamLatte/70");
+    }
+
+    // Hide all pages, show selected page
+    document.querySelectorAll("#panel-page-content > div").forEach((page) => {
+      page.classList.add("hidden");
+    });
+
+    const targetPage = document.getElementById(`page-${viewId}`);
+    if (targetPage) {
+      targetPage.classList.remove("hidden");
+    }
+
+    // Trigger lazy load actions for specific pages
+    if (viewId === "pos") {
+      loadPosCatalog();
+    } else if (viewId === "shift") {
+      loadShiftsPage();
+    } else if (viewId === "inventory") {
+      loadInventoryPage();
+    } else if (viewId === "transactions") {
+      loadTransactionsPage();
+    } else if (viewId === "reports") {
+      loadDashboardReports();
+    } else if (viewId === "audit") {
+      loadAuditPage();
+    }
+  }
+
+  /**
+   * Resolves cashier shift status from database.
+   */
+  function refreshActiveShiftStatus() {
+    google.script.run
+      .withSuccessHandler((res) => {
+        document.getElementById("app-loading").classList.add("hidden");
+
+        if (res.success && res.shift) {
+          STATE.activeShift = res.shift;
+          document.getElementById("panel-no-shift").classList.add("hidden");
+          document
+            .getElementById("panel-page-content")
+            .classList.remove("hidden");
+
+          // Auto route to POS or current view
+          switchView(STATE.currentView);
+        } else {
+          STATE.activeShift = null;
+          document.getElementById("panel-no-shift").classList.remove("hidden");
+          document.getElementById("panel-page-content").classList.add("hidden");
+        }
+      })
+      .rpcGetActiveShift();
+  }
+
+  // ==========================================
+  //          MOBILE SIDEBAR TOGGLE
+  // ==========================================
+
+  function toggleMobileSidebar() {
+    const sidebar = document.getElementById("app-sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+    const isOpen = sidebar.classList.contains("open");
+
+    if (isOpen) {
+      closeMobileSidebar();
+    } else {
+      sidebar.classList.add("open");
+      overlay.classList.add("active");
+      document.body.style.overflow = "hidden";
+    }
+  }
+
+  function closeMobileSidebar() {
+    const sidebar = document.getElementById("app-sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+    if (!sidebar || !overlay) return;
+    sidebar.classList.remove("open");
+    overlay.classList.remove("active");
+    document.body.style.overflow = "";
+  }
+</script>

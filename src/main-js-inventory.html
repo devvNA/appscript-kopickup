@@ -1,0 +1,181 @@
+<script>
+      //          INVENTORY MANAGEMENT
+      // ==========================================
+
+      function loadInventoryPage() {
+
+        google.script.run
+          .withSuccessHandler((res) => {
+            document.getElementById("app-loading").classList.add("hidden");
+            if (res.success) {
+              const tbody = document.getElementById("inventory-table-body");
+              tbody.innerHTML = "";
+
+              res.products.forEach((p) => {
+                const row = document.createElement("tr");
+                row.className =
+                  "border-b border-coffeeBean/10 hover:bg-coffeeBean/5 font-medium";
+
+                const isLowStock = Number(p.stock) < 10;
+                const stockText = isLowStock ? `${p.stock} (Rendah)` : p.stock;
+
+                row.innerHTML = `
+                <td class="py-3 px-2 font-bold">${p.name}</td>
+                <td class="py-3 px-2 text-coffeeBean/60">${p.category}</td>
+                <td class="py-3 px-2 font-bold">Rp ${Number(p.price).toLocaleString("id-ID")}</td>
+                <td class="py-3 px-2 font-bold ${isLowStock ? "text-terracotta" : "text-forestGreen"}">${stockText}</td>
+                <td class="py-3 px-2">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold ${p.status === "ACTIVE" ? "bg-forestGreen/10 text-forestGreen border border-forestGreen/25" : "bg-red-500/10 text-red-500 border border-red-500/25"}">
+                    ${p.status === "ACTIVE" ? "AKTIF" : "NONAKTIF"}
+                  </span>
+                </td>
+                <td class="py-3 px-2 text-right space-x-1.5 whitespace-nowrap">
+                  <button onclick="openAdjustStockModal('${p.id}', '${p.name}', ${p.stock})" class="px-2 py-1 bg-coffeeBean/10 hover:bg-coffeeBean/25 text-coffeeBean border border-coffeeBean/20 rounded font-bold">Koreksi Stok</button>
+                  <button onclick="openEditProductModal('${p.id}')" class="px-2 py-1 bg-coffeeBean/10 hover:bg-coffeeBean/25 text-coffeeBean border border-coffeeBean/20 rounded font-bold">Ubah Menu</button>
+                </td>
+              `;
+                tbody.appendChild(row);
+              });
+            }
+          })
+          .withFailureHandler(() => {
+            document.getElementById("app-loading").classList.add("hidden");
+          })
+          .rpcGetProducts();
+      }
+
+      // Modal Control wrappers
+      function openAddProductModal() {
+        document.getElementById("product-form-title").innerText =
+          "Tambah Produk Baru";
+        document.getElementById("pf-id").value = "";
+        document.getElementById("pf-name").value = "";
+        document.getElementById("pf-category").value =
+          "EXPRESO BASED & SIGNATURE";
+        document.getElementById("pf-price").value = "";
+        document.getElementById("pf-stock").value = "100";
+        document.getElementById("pf-status").value = "ACTIVE";
+        document.getElementById("pf-image").value = "";
+
+        document
+          .getElementById("modal-product-form")
+          .classList.remove("hidden");
+      }
+
+      function openEditProductModal(id) {
+        const p = STATE.products.find((item) => item.id === id);
+        if (!p) return;
+
+        document.getElementById("product-form-title").innerText =
+          "Ubah Detail Menu";
+        document.getElementById("pf-id").value = p.id;
+        document.getElementById("pf-name").value = p.name;
+        document.getElementById("pf-category").value = p.category;
+        document.getElementById("pf-price").value = p.price;
+        document.getElementById("pf-stock").value = p.stock;
+        document.getElementById("pf-status").value = p.status;
+        document.getElementById("pf-image").value = p.imageUrl || "";
+
+        document
+          .getElementById("modal-product-form")
+          .classList.remove("hidden");
+      }
+
+      function closeProductFormModal() {
+        document.getElementById("modal-product-form").classList.add("hidden");
+      }
+
+      function handleProductFormSubmit(e) {
+        e.preventDefault();
+
+        const id = document.getElementById("pf-id").value;
+        const name = document.getElementById("pf-name").value.trim();
+        const category = document.getElementById("pf-category").value;
+        const price = Number(document.getElementById("pf-price").value);
+        const stock = Number(document.getElementById("pf-stock").value);
+        const status = document.getElementById("pf-status").value;
+        const imageUrl = document.getElementById("pf-image").value.trim();
+
+        document.getElementById("app-loading").classList.remove("hidden");
+        closeProductFormModal();
+
+
+        const payload = { name, category, price, stock, status, imageUrl };
+
+        if (id) {
+          // Edit flow
+          google.script.run
+            .withSuccessHandler((res) => {
+              if (res.success) {
+                loadInventoryPage();
+              } else {
+                document.getElementById("app-loading").classList.add("hidden");
+                showSnackbar(res.error);
+              }
+            })
+            .withFailureHandler((err) => {
+              document.getElementById("app-loading").classList.add("hidden");
+              showSnackbar("Server error: " + err.message);
+            })
+            .rpcUpdateProduct(id, payload, STATE.currentUser);
+        } else {
+          // Add flow
+          google.script.run
+            .withSuccessHandler((res) => {
+              if (res.success) {
+                loadInventoryPage();
+              } else {
+                document.getElementById("app-loading").classList.add("hidden");
+                showSnackbar(res.error);
+              }
+            })
+            .withFailureHandler((err) => {
+              document.getElementById("app-loading").classList.add("hidden");
+              showSnackbar("Server error: " + err.message);
+            })
+            .rpcCreateProduct(payload, STATE.currentUser);
+        }
+      }
+
+      function openAdjustStockModal(id, name, currentStock) {
+        document.getElementById("as-product-id").value = id;
+        document.getElementById("as-product-name").innerText = name;
+        document.getElementById("as-product-current-stock").innerText =
+          `${currentStock} Unit`;
+        document.getElementById("as-new-stock").value = currentStock;
+        document.getElementById("as-reason").value = "";
+
+        document
+          .getElementById("modal-adjust-stock")
+          .classList.remove("hidden");
+      }
+
+      function closeAdjustStockModal() {
+        document.getElementById("modal-adjust-stock").classList.add("hidden");
+      }
+
+      function handleStockAdjustSubmit(e) {
+        e.preventDefault();
+
+        const id = document.getElementById("as-product-id").value;
+        const newStock = Number(document.getElementById("as-new-stock").value);
+        const reason = document.getElementById("as-reason").value.trim();
+
+        document.getElementById("app-loading").classList.remove("hidden");
+        closeAdjustStockModal();
+
+
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res.success) {
+              loadInventoryPage();
+            } else {
+              document.getElementById("app-loading").classList.add("hidden");
+              showSnackbar(res.error);
+            }
+          })
+          .rpcAdjustStock(id, newStock, reason, STATE.currentUser);
+      }
+
+      // ==========================================
+</script>

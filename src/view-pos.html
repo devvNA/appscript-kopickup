@@ -1,0 +1,154 @@
+          <div
+            id="page-pos"
+            class="flex-grow lg:min-h-0 flex flex-col lg:flex-row gap-4 md:gap-6 hidden"
+          >
+            <!-- Left Content: Product Grid -->
+            <div class="flex-grow flex flex-col min-w-0 lg:min-h-0">
+              <!-- Top Bar: Search & Category Filter -->
+              <div class="flex flex-col sm:flex-row gap-3 mb-3 md:mb-4">
+                <!-- Search Input -->
+                <div class="relative w-full sm:w-1/3 md:w-64 shrink-0">
+                  <input
+                    type="text"
+                    id="pos-search-input"
+                    placeholder="Cari menu..."
+                    oninput="drawProductsGrid()"
+                    class="w-full pl-4 pr-4 py-2 bg-white/50 border border-coffeeBean/20 rounded-full text-xs font-semibold focus:ring-1 focus:ring-coffeeBean focus:bg-white focus:outline-none placeholder-coffeeBean/50 shadow-sm transition"
+                  />
+                </div>
+
+                <!-- Category Bar -->
+                <div
+                  class="flex items-center space-x-2 overflow-x-auto pb-1 flex-grow scrollbar-hide"
+                  id="pos-categories"
+                >
+                  <!-- Rendered via JS -->
+                </div>
+              </div>
+
+              <!-- Products Grid Container -->
+              <div
+                class="flex-grow lg:min-h-0 overflow-y-visible lg:overflow-y-auto pr-1"
+              >
+                <div
+                  id="pos-products-grid"
+                  class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4"
+                >
+                  <!-- Rendered via JS -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Sidebar: Cart & Checkout Summary -->
+            <div
+              class="w-full lg:w-96 bg-creamLatte border border-coffeeBean/10 rounded-card shadow-soft p-4 md:p-5 flex flex-col lg:min-h-0 max-h-[calc(100dvh-6rem)] lg:max-h-none lg:min-h-[450px] shrink-0"
+            >
+              <div
+                class="flex items-center justify-between pb-3 border-b border-coffeeBean/10 mb-3 md:mb-4"
+              >
+                <h3
+                  class="font-bold text-coffeeBean flex items-center text-sm md:text-base"
+                >
+                  <i class="fa-solid fa-bag-shopping mr-2"></i> Pesanan
+                </h3>
+                <span
+                  id="pos-cart-count"
+                  class="text-[10px] sm:text-xs bg-terracotta text-creamLatte font-bold px-2 sm:px-2.5 py-0.5 rounded-full"
+                  >0 Item</span
+                >
+              </div>
+
+              <!-- Cart Items Scroll -->
+              <div
+                id="pos-cart-items"
+                class="flex-grow min-h-20 overflow-y-auto space-y-2 sm:space-y-3 mb-3 md:mb-4 pr-1"
+              >
+                <!-- Rendered via JS -->
+              </div>
+
+              <!-- Notes & Payment Controls -->
+              <div
+                class="border-t border-coffeeBean/10 pt-3 md:pt-4 mt-auto space-y-2.5 md:space-y-3 shrink-0"
+              >
+                <div
+                  class="flex justify-between font-bold text-espressoBlack mb-1"
+                >
+                  <span class="text-sm">Total Bayar</span>
+                  <span
+                    id="pos-cart-total"
+                    class="text-base md:text-lg text-terracotta"
+                    >Rp 0</span
+                  >
+                </div>
+
+                <!-- Payment Method Toggle -->
+                <div class="grid grid-cols-2 gap-2">
+                  <button
+                    id="btn-pay-cash"
+                    onclick="setPaymentMethod('CASH')"
+                    class="py-2 md:py-2.5 bg-coffeeBean text-creamLatte border border-coffeeBean rounded-button font-bold text-[10px] sm:text-xs flex items-center justify-center space-x-1 shadow transition"
+                  >
+                    <i class="fa-solid fa-money-bill-1"></i>
+                    <span>Tunai</span>
+                  </button>
+                  <button
+                    id="btn-pay-noncash"
+                    onclick="setPaymentMethod('NON_CASH')"
+                    class="py-2 md:py-2.5 bg-creamLatte text-coffeeBean border border-coffeeBean/30 hover:border-coffeeBean rounded-button font-bold text-[10px] sm:text-xs flex items-center justify-center space-x-1 transition"
+                  >
+                    <i class="fa-solid fa-qrcode"></i>
+                    <span>Non-Tunai</span>
+                  </button>
+                </div>
+
+                <!-- Cash Payment Detail -->
+                <div
+                  id="cash-payment-panel"
+                  class="bg-coffeeBean/5 border border-coffeeBean/10 rounded-xl p-3 space-y-2"
+                >
+                  <div>
+                    <label
+                      for="cash-received-input"
+                      class="block text-[10px] font-bold uppercase tracking-wider text-coffeeBean mb-1.5"
+                      >Nominal Uang Diterima</label
+                    >
+                    <div class="relative">
+                      <span
+                        class="absolute inset-y-0 left-0 pl-3 flex items-center text-coffeeBean/50 text-xs font-bold"
+                        >Rp</span
+                      >
+                      <input
+                        type="text"
+                        id="cash-received-input"
+                        inputmode="numeric"
+                        placeholder="0"
+                        oninput="formatCashInput(this)"
+                        class="w-full pl-9 pr-4 py-2.5 bg-creamLatte border border-coffeeBean/25 rounded-button text-sm font-semibold focus:ring-coffeeBean/50 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="font-bold text-coffeeBean/70">Kembalian</span>
+                    <span
+                      id="cash-change-display"
+                      class="text-sm font-extrabold text-forestGreen"
+                      >Rp 0</span
+                    >
+                  </div>
+                  <p
+                    id="cash-change-note"
+                    class="hidden text-[10px] font-semibold text-terracotta"
+                  >
+                    Nominal tunai masih kurang dari total bayar.
+                  </p>
+                </div>
+
+                <button
+                  onclick="handleCheckout()"
+                  class="w-full py-2.5 md:py-3 bg-terracotta hover:bg-espressoBlack text-creamLatte font-bold rounded-button text-[10px] sm:text-xs uppercase tracking-wider shadow-md transition duration-200"
+                >
+                  Simpan & Cetak Struk
+                </button>
+              </div>
+            </div>
+          </div>

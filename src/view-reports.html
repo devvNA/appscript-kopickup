@@ -1,0 +1,123 @@
+          <!-- PAGE 5: DASHBOARD ANALYTICS & REPORTS -->
+          <div id="page-reports" class="hidden space-y-6">
+            <!-- Bento Grid Stat Summary Cards -->
+            <div
+              class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"
+            >
+              <div
+                class="bg-creamLatte border border-coffeeBean/10 p-4 md:p-5 rounded-card shadow-soft flex items-center space-x-3 md:space-x-4"
+              >
+                <div
+                  class="w-10 h-10 md:w-12 md:h-12 bg-terracotta/10 text-terracotta rounded-xl flex items-center justify-center text-lg md:text-xl shadow-inner shrink-0"
+                >
+                  <i class="fa-solid fa-rupiah-sign"></i>
+                </div>
+                <div class="min-w-0">
+                  <span
+                    class="text-[9px] md:text-[10px] font-bold text-coffeeBean/50 uppercase tracking-wider"
+                    >Omset Hari Ini</span
+                  >
+                  <p
+                    id="report-stat-revenue-today"
+                    class="text-base md:text-lg font-extrabold text-espressoBlack truncate mt-0.5"
+                  >
+                    Rp 0
+                  </p>
+                </div>
+              </div>
+
+              <div
+                class="bg-creamLatte border border-coffeeBean/10 p-4 md:p-5 rounded-card shadow-soft flex items-center space-x-3 md:space-x-4"
+              >
+                <div
+                  class="w-10 h-10 md:w-12 md:h-12 bg-forestGreen/10 text-forestGreen rounded-xl flex items-center justify-center text-lg md:text-xl shadow-inner shrink-0"
+                >
+                  <i class="fa-solid fa-mug-saucer"></i>
+                </div>
+                <div class="min-w-0">
+                  <span
+                    class="text-[9px] md:text-[10px] font-bold text-coffeeBean/50 uppercase tracking-wider"
+                    >Order Hari Ini</span
+                  >
+                  <p
+                    id="report-stat-orders-today"
+                    class="text-base md:text-lg font-extrabold text-espressoBlack truncate mt-0.5"
+                  >
+                    0 Transaksi
+                  </p>
+                </div>
+              </div>
+
+              <div
+                class="bg-creamLatte border border-coffeeBean/10 p-4 md:p-5 rounded-card shadow-soft flex items-center space-x-3 md:space-x-4"
+              >
+                <div
+                  class="w-10 h-10 md:w-12 md:h-12 bg-coffeeBean/10 text-coffeeBean rounded-xl flex items-center justify-center text-lg md:text-xl shadow-inner shrink-0"
+                >
+                  <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div class="min-w-0">
+                  <span
+                    class="text-[9px] md:text-[10px] font-bold text-coffeeBean/50 uppercase tracking-wider"
+                    >Total Omset</span
+                  >
+                  <p
+                    id="report-stat-revenue-all"
+                    class="text-base md:text-lg font-extrabold text-espressoBlack truncate mt-0.5"
+                  >
+                    Rp 0
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Charts Bento Grid Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
+              <!-- Sales rush hourly distribution (Line Chart) -->
+              <div
+                class="lg:col-span-2 bg-creamLatte border border-coffeeBean/10 p-4 md:p-6 rounded-card shadow-soft flex flex-col min-h-[250px] md:min-h-[300px]"
+              >
+                <h4
+                  class="cormorant-brand text-xl md:text-2xl font-bold text-coffeeBean mb-3 md:mb-4"
+                >
+                  <i class="fa-solid fa-chart-area mr-1.5 text-terracotta"></i>
+                  Distribusi Jam Ramai
+                </h4>
+                <div class="flex-grow relative h-48 md:h-64">
+                  <canvas id="chart-hourly-trend"></canvas>
+                </div>
+              </div>
+
+              <!-- Bestselling Products Indicator (MVP) -->
+              <div
+                class="bg-creamLatte border border-coffeeBean/10 p-4 md:p-6 rounded-card shadow-soft flex flex-col"
+              >
+                <h4
+                  class="cormorant-brand text-xl md:text-2xl font-bold text-coffeeBean border-b border-coffeeBean/10 pb-2 mb-4"
+                >
+                  <i class="fa-solid fa-star mr-1.5 text-goldSand"></i> Menu
+                  Paling Laris
+                </h4>
+                <div id="report-top-products" class="flex-grow space-y-4 py-2">
+                  <!-- Progress bars populated dynamically -->
+                </div>
+              </div>
+
+              <!-- Payment Methods distribution -->
+              <div
+                class="bg-creamLatte border border-coffeeBean/10 p-4 md:p-6 rounded-card shadow-soft flex flex-col"
+              >
+                <h4
+                  class="cormorant-brand text-xl md:text-2xl font-bold text-coffeeBean mb-3 md:mb-4"
+                >
+                  <i class="fa-solid fa-circle-notch mr-1.5"></i> Metode
+                  Pembayaran
+                </h4>
+                <div
+                  class="flex-grow relative h-48 flex items-center justify-center"
+                >
+                  <canvas id="chart-payment-methods"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>

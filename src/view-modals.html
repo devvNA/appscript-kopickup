@@ -1,0 +1,435 @@
+    <!-- ==========================================
+            DIALOG / MODAL WINDOWS
+       ========================================== -->
+
+    <!-- MODAL 1: POS RECEIPT VIEWER -->
+    <div
+      id="modal-receipt"
+      class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4"
+    >
+      <div
+        class="w-full max-w-sm bg-white text-espressoBlack p-6 rounded-modal shadow-2xl font-mono text-xs border border-coffeeBean/10 flex flex-col relative max-h-[85vh] overflow-hidden"
+      >
+        <!-- Checkerboard Mini Border -->
+        <div
+          class="checkerboard-border h-2.5 w-full absolute top-0 left-0 opacity-75"
+        ></div>
+
+        <button
+          title="Tutup"
+          onclick="closeReceiptModal()"
+          class="absolute top-4 right-4 text-espressoBlack/60 hover:text-espressoBlack text-base font-bold"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="text-center mt-3 mb-6">
+          <h4 class="font-bold text-sm tracking-wider uppercase">
+            KOPICKUP TRUCK
+          </h4>
+          <p class="text-[10px] text-espressoBlack/70 mt-0.5">
+            Jl. Bung Karno, Kranjimuntang, Purwanegara, Kec. Purwokerto Utara,
+            Kabupaten Banyumas, Jawa Tengah 53116 (Seberang Menara Pandang
+            Teratai)
+          </p>
+          <p class="text-[10px] text-espressoBlack/70">Telp: 0812-3456-7890</p>
+        </div>
+
+        <div
+          class="border-b border-dashed border-espressoBlack/30 pb-3 mb-3 space-y-1"
+        >
+          <div class="flex justify-between">
+            <span>No Transaksi:</span>
+            <span id="rec-tx-no" class="font-bold">KP-XXXXXXXX-XXXX</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Tanggal:</span>
+            <span id="rec-tx-date">YYYY-MM-DD HH:MM</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Kasir:</span>
+            <span id="rec-tx-cashier">Barista</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Metode Bayar:</span>
+            <span id="rec-tx-method">TUNAI</span>
+          </div>
+        </div>
+
+        <!-- Items Grid Scrollable inside Receipt -->
+        <div
+          id="rec-items-list"
+          class="flex-grow overflow-y-auto space-y-2 border-b border-dashed border-espressoBlack/30 pb-3 mb-3"
+        >
+          <!-- Rendered via JS -->
+        </div>
+
+        <div class="space-y-1.5 mb-6 text-right">
+          <div class="flex justify-between font-bold text-sm">
+            <span>Total Tagihan:</span>
+            <span id="rec-tx-total">Rp 0</span>
+          </div>
+        </div>
+
+        <div
+          class="text-center text-[10px] text-espressoBlack/60 italic border-t border-dashed border-espressoBlack/30 pt-3"
+        >
+          "Terima kasih atas kunjungan Anda!<br />Semoga hari Anda hangat &
+          menyenangkan!"
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 2: ADD / EDIT PRODUCT -->
+    <div
+      id="modal-product-form"
+      class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4"
+    >
+      <div
+        class="w-full max-w-md bg-creamLatte p-6 rounded-modal shadow-2xl border border-coffeeBean/10 flex flex-col relative"
+      >
+        <button
+          title="Tutup"
+          onclick="closeProductFormModal()"
+          class="absolute top-4 right-4 text-coffeeBean/70 hover:text-coffeeBean text-lg"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <h3
+          id="product-form-title"
+          class="cormorant-brand text-3xl font-bold text-coffeeBean border-b border-coffeeBean/10 pb-2 mb-4"
+        >
+          Tambah Produk Baru
+        </h3>
+
+        <form
+          id="product-form"
+          onsubmit="handleProductFormSubmit(event)"
+          class="space-y-4 text-xs font-semibold text-espressoBlack"
+        >
+          <input type="hidden" id="pf-id" />
+          <div>
+            <label
+              for="pf-name"
+              class="block text-[10px] font-bold uppercase tracking-wider text-coffeeBean mb-1.5"
+              >Nama Produk *</label
+            >
+            <input
+              type="text"
+              id="pf-name"
+              required
+              class="w-full px-3 py-2 bg-creamLatte border border-coffeeBean/25 rounded-button focus:outline-none focus:ring-1 focus:ring-coffeeBean font-medium"
+            />
+          </div>
+
+          <div>
+            <label
+              for="pf-category"
+              class="block text-[10px] font-bold uppercase tracking-wider text-coffeeBean mb-1.5"
+              >Kategori *</label
+            >
+            <select
+              id="pf-category"
+              required
+              class="w-full px-3 py-2 bg-creamLatte border border-coffeeBean/25 rounded-button focus:outline-none focus:ring-1 focus:ring-coffeeBean font-medium"
+            >
+              <option value="EXPRESO BASED & SIGNATURE">
+                EXPRESO BASED & SIGNATURE
+              </option>
+              <option value="REFRESHING TEA">REFRESHING TEA</option>
+              <option value="NON COFFEE">NON COFFEE</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label
+                for="pf-price"
+                class="block text-[10px] font-bold uppercase tracking-wider text-coffeeBean mb-1.5"
+                >Harga Jual (Rp) *</label
+              >
+              <input
+                type="number"
+                id="pf-price"
+                required
+                min="0"
+                class="w-full px-3 py-2 bg-creamLatte border border-coffeeBean/25 rounded-button focus:outline-none focus:ring-1 focus:ring-coffeeBean font-medium"
+              />
+            </div>
+            <div>
+              <label
+                for="pf-stock"
+                class="block text-[10px] font-bold uppercase tracking-wider text-coffeeBean mb-1.5"
+                >Stok Awal *</label
+              >
+              <input
+                type="number"
+                id="pf-stock"
+                required
+                min="0"
+                class="w-full px-3 py-2 bg-creamLatte border border-coffeeBean/25 rounded-button focus:outline-none focus:ring-1 focus:ring-coffeeBean font-medium"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label
+              for="pf-status"
+              class="block text-[10px] font-bold uppercase tracking-wider text-coffeeBean mb-1.5"
+              >Status Menu</label
+            >
+            <select
+              id="pf-status"
+              class="w-full px-3 py-2 bg-creamLatte border border-coffeeBean/25 rounded-button focus:outline-none focus:ring-1 focus:ring-coffeeBean font-medium"
+            >
+              <option value="ACTIVE">Aktif (Tersedia)</option>
+              <option value="INACTIVE">Nonaktif (Sembunyikan)</option>
+            </select>
+          </div>
+
+          <div>
+            <label
+              for="pf-image"
+              class="block text-[10px] font-bold uppercase tracking-wider text-coffeeBean mb-1.5"
+              >URL Foto Produk (Opsional)</label
+            >
+            <input
+              type="url"
+              id="pf-image"
+              placeholder="https://..."
+              class="w-full px-3 py-2 bg-creamLatte border border-coffeeBean/25 rounded-button focus:outline-none focus:ring-1 focus:ring-coffeeBean font-medium text-xs"
+            />
+          </div>
+
+          <div class="pt-2">
+            <button
+              type="submit"
+              class="w-full py-3 bg-coffeeBean hover:bg-espressoBlack text-creamLatte font-bold rounded-button uppercase tracking-wider shadow transition"
+            >
+              Simpan Produk
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL 3: STOCK ADJUSTMENT FORM -->
+    <div
+      id="modal-adjust-stock"
+      class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4"
+    >
+      <div
+        class="w-full max-w-sm bg-creamLatte p-6 rounded-modal shadow-2xl border border-coffeeBean/10 flex flex-col relative"
+      >
+        <button
+          title="Tutup"
+          onclick="closeAdjustStockModal()"
+          class="absolute top-4 right-4 text-coffeeBean/70 hover:text-coffeeBean text-lg"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <h3
+          class="cormorant-brand text-2xl font-bold text-coffeeBean border-b border-coffeeBean/10 pb-2 mb-4"
+        >
+          Penyesuaian Fisik Stok
+        </h3>
+
+        <form
+          id="adjust-stock-form"
+          onsubmit="handleStockAdjustSubmit(event)"
+          class="space-y-4 text-xs font-semibold text-espressoBlack"
+        >
+          <input type="hidden" id="as-product-id" />
+          <div>
+            <label
+              class="block text-[10px] font-bold uppercase tracking-wider text-coffeeBean/50 mb-1"
+              >Nama Produk</label
+            >
+            <p
+              id="as-product-name"
+              class="text-sm font-bold text-espressoBlack"
+            >
+              Loading Name...
+            </p>
+          </div>
+          <div>
+            <label
+              class="block text-[10px] font-bold uppercase tracking-wider text-coffeeBean/50 mb-1"
+              >Stok Tercatat Saat Ini</label
+            >
+            <p
+              id="as-product-current-stock"
+              class="text-sm font-bold text-espressoBlack"
+            >
+              0 Unit
+            </p>
+          </div>
+          <div>
+            <label
+              for="as-new-stock"
+              class="block text-[10px] font-bold uppercase tracking-wider text-coffeeBean mb-1.5"
+              >Jumlah Stok Fisik Sebenarnya *</label
+            >
+            <input
+              type="number"
+              id="as-new-stock"
+              required
+              min="0"
+              class="w-full px-3 py-2 bg-creamLatte border border-coffeeBean/25 rounded-button focus:outline-none focus:ring-1 focus:ring-coffeeBean font-medium"
+            />
+          </div>
+          <div>
+            <label
+              for="as-reason"
+              class="block text-[10px] font-bold uppercase tracking-wider text-coffeeBean mb-1.5"
+              >Alasan Penyesuaian Stok *</label
+            >
+            <textarea
+              id="as-reason"
+              required
+              placeholder="Contoh: Selisih fisik terbuang/tumpah, dll"
+              class="w-full px-3 py-2 bg-creamLatte border border-coffeeBean/25 rounded-button focus:outline-none focus:ring-1 focus:ring-coffeeBean font-medium h-20"
+            ></textarea>
+          </div>
+
+          <div class="pt-2">
+            <button
+              type="submit"
+              class="w-full py-3 bg-coffeeBean hover:bg-espressoBlack text-creamLatte font-bold rounded-button uppercase tracking-wider shadow transition"
+            >
+              Simpan Koreksi Stok
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL 4: REFUND / VOID TRANSACTION FORM -->
+    <div
+      id="modal-refund"
+      class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-4"
+    >
+      <div
+        class="w-full max-w-sm bg-creamLatte p-6 rounded-modal shadow-2xl border border-coffeeBean/10 flex flex-col relative"
+      >
+        <button
+          title="Tutup"
+          onclick="closeRefundModal()"
+          class="absolute top-4 right-4 text-coffeeBean/70 hover:text-coffeeBean text-lg"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <h3
+          id="refund-title"
+          class="cormorant-brand text-2xl font-bold text-coffeeBean border-b border-coffeeBean/10 pb-2 mb-4"
+        >
+          Refund / Void Transaksi
+        </h3>
+
+        <form
+          id="refund-form"
+          onsubmit="handleRefundSubmit(event)"
+          class="space-y-4 text-xs font-semibold text-espressoBlack"
+        >
+          <input type="hidden" id="rf-tx-id" />
+          <input type="hidden" id="rf-action-type" />
+          <!-- 'VOID' or 'REFUND' -->
+          <div>
+            <label
+              class="block text-[10px] font-bold uppercase tracking-wider text-coffeeBean/50 mb-1"
+              >No. Transaksi Target</label
+            >
+            <p id="rf-tx-no" class="text-[12px] font-bold text-espressoBlack">
+              Loading...
+            </p>
+          </div>
+          <div>
+            <label
+              for="rf-reason"
+              class="block text-[10px] font-bold uppercase tracking-wider text-coffeeBean mb-1.5"
+              >Justifikasi / Alasan Pembatalan *</label
+            >
+            <textarea
+              id="rf-reason"
+              required
+              placeholder="Contoh: Salah input pesanan, pembeli batal bayar, dll"
+              class="w-full px-3 py-2 bg-creamLatte border border-coffeeBean/25 rounded-button focus:outline-none focus:ring-1 focus:ring-coffeeBean font-medium h-20"
+            ></textarea>
+          </div>
+
+          <div class="pt-2">
+            <button
+              id="refund-submit-button"
+              type="submit"
+              class="w-full py-3 bg-terracotta hover:bg-espressoBlack text-creamLatte font-bold rounded-button uppercase tracking-wider shadow transition"
+            >
+              Konfirmasi Pembatalan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- SHARED UI: APP CONFIRMATION DIALOG -->
+    <div
+      id="app-confirm-dialog"
+      class="fixed inset-0 z-[100] hidden items-center justify-center bg-espressoBlack/55 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="app-confirm-title"
+      aria-describedby="app-confirm-message"
+    >
+      <div
+        id="app-confirm-card"
+        class="w-full max-w-sm scale-95 rounded-modal border border-coffeeBean/15 bg-creamLatte p-5 text-center shadow-2xl transition-transform duration-200"
+      >
+        <div
+          class="checkerboard-border h-2 w-full rounded-t-modal opacity-70 -mt-5 mb-5"
+        ></div>
+        <div
+          class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-terracotta/10 text-2xl text-terracotta"
+        >
+          <i id="app-confirm-icon" class="fa-solid fa-circle-question"></i>
+        </div>
+        <h3
+          id="app-confirm-title"
+          class="cormorant-brand mb-2 text-2xl font-bold text-coffeeBean"
+        >
+          Konfirmasi Aksi
+        </h3>
+        <p
+          id="app-confirm-message"
+          class="mb-5 whitespace-pre-line text-sm font-medium leading-relaxed text-espressoBlack/75"
+        ></p>
+        <div class="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            id="app-confirm-cancel"
+            class="rounded-button border border-coffeeBean/30 bg-creamLatte px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-coffeeBean transition hover:border-coffeeBean hover:bg-coffeeBean/5"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            id="app-confirm-ok"
+            class="rounded-button bg-coffeeBean px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-creamLatte shadow-md transition hover:bg-espressoBlack"
+          >
+            Lanjutkan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHARED UI: APP SNACKBAR / ALERT -->
+    <div
+      id="app-snackbar"
+      class="fixed left-1/2 top-5 z-[110] hidden max-w-[90vw] -translate-x-1/2 -translate-y-6 items-center gap-3 rounded-full px-5 py-3 text-sm font-semibold opacity-0 shadow-soft transition duration-200"
+      role="status"
+      aria-live="polite"
+    >
+      <i id="app-snackbar-icon" class="fa-solid fa-circle-info"></i>
+      <span id="app-snackbar-message"></span>
+    </div>

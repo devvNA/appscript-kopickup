@@ -1,0 +1,185 @@
+<script>
+      //          OWNER ANALYTICS DASHBOARD
+      // ==========================================
+
+      function loadDashboardReports() {
+
+        // Tampilkan indikator loading lokal di main content
+        document.getElementById("report-stat-revenue-today").innerText =
+          "Loading...";
+        document.getElementById("report-stat-orders-today").innerText =
+          "Loading...";
+        document.getElementById("report-stat-revenue-all").innerText =
+          "Loading...";
+        document.getElementById("report-top-products").innerHTML =
+          `<div class="text-center py-6 text-coffeeBean/40 animate-pulse">Memuat data...</div>`;
+
+        google.script.run
+          .withFailureHandler((err) => {
+            document.getElementById("report-stat-revenue-today").innerText =
+              "Error";
+            document.getElementById("report-stat-orders-today").innerText =
+              "Error";
+            document.getElementById("report-stat-revenue-all").innerText =
+              "Error";
+            document.getElementById("report-top-products").innerHTML =
+              `<div class="text-center py-6 text-terracotta">Gagal memuat: ${err.message || "Unknown error"}</div>`;
+          })
+          .withSuccessHandler((res) => {
+            if (res.success && res.stats) {
+              const s = res.stats;
+
+              // Set stats values
+              document.getElementById("report-stat-revenue-today").innerText =
+                `Rp ${Number(s.todayRevenue).toLocaleString("id-ID")}`;
+              document.getElementById("report-stat-orders-today").innerText =
+                `${s.todayOrders} Orders`;
+              document.getElementById("report-stat-revenue-all").innerText =
+                `Rp ${Number(s.totalRevenue).toLocaleString("id-ID")}`;
+
+              // Render bestseller progress bars
+              drawBestsellersProgress(s.topProducts);
+
+              // Render Chart.js visual charts
+              renderCharts(s);
+            } else {
+              document.getElementById("report-stat-revenue-today").innerText =
+                "Error";
+              document.getElementById("report-stat-orders-today").innerText =
+                "Error";
+              document.getElementById("report-stat-revenue-all").innerText =
+                "Error";
+              document.getElementById("report-top-products").innerHTML =
+                `<div class="text-center py-6 text-terracotta font-bold">Gagal memuat: ${res.error || "Unknown error"}</div>`;
+            }
+          })
+          .rpcGetDashboardStats(STATE.currentUser);
+      }
+
+      function drawBestsellersProgress(products) {
+        const container = document.getElementById("report-top-products");
+        container.innerHTML = "";
+
+        if (products.length === 0) {
+          container.innerHTML = `<div class="text-center py-6 text-coffeeBean/40">Belum ada data penjualan produk.</div>`;
+          return;
+        }
+
+        // Get highest quantity to act as 100% basis
+        const maxQty = Math.max(...products.map((p) => p.qty));
+
+        products.forEach((p) => {
+          const pct = maxQty > 0 ? (p.qty / maxQty) * 100 : 0;
+
+          const div = document.createElement("div");
+          div.className = "space-y-1.5";
+          div.innerHTML = `
+          <div class="flex justify-between text-xs font-bold text-espressoBlack">
+            <span>${p.name}</span>
+            <span>${p.qty} Cups Sold</span>
+          </div>
+          <div class="w-full bg-coffeeBean/10 h-2 rounded-full overflow-hidden">
+            <div class="bg-terracotta h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+          </div>
+        `;
+          container.appendChild(div);
+        });
+      }
+
+      function renderCharts(stats) {
+        // 1. Payment Methods Pie
+        if (STATE.charts.payment) {
+          STATE.charts.payment.destroy();
+        }
+
+        const pmCtx = document
+          .getElementById("chart-payment-methods")
+          .getContext("2d");
+        STATE.charts.payment = new Chart(pmCtx, {
+          type: "doughnut",
+          data: {
+            labels: ["Tunai (Cash)", "Non-Tunai"],
+            datasets: [
+              {
+                data: [
+                  stats.paymentMethods.CASH || 0,
+                  stats.paymentMethods.NON_CASH || 0,
+                ],
+                backgroundColor: ["#4B2E24", "#B66A3C"],
+                borderColor: "#F2E8D8",
+                borderWidth: 2,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: { family: "Poppins", size: 10 },
+                  color: "#231815",
+                },
+              },
+            },
+          },
+        });
+
+        // 2. Rush Hours trend line
+        if (STATE.charts.trend) {
+          STATE.charts.trend.destroy();
+        }
+
+        const labels = stats.hourlyTrend.map((t) => t.hour);
+        const data = stats.hourlyTrend.map((t) => t.revenue);
+
+        const trCtx = document
+          .getElementById("chart-hourly-trend")
+          .getContext("2d");
+        STATE.charts.trend = new Chart(trCtx, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Omset Jam Ramai",
+                data: data,
+                fill: true,
+                backgroundColor: "rgba(182, 106, 60, 0.15)",
+                borderColor: "#B66A3C",
+                borderWidth: 3,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: "#4B2E24",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+            },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: {
+                  font: { family: "Poppins", size: 9 },
+                  color: "#231815",
+                },
+              },
+              y: {
+                grid: { color: "rgba(75, 46, 36, 0.05)" },
+                ticks: {
+                  font: { family: "Poppins", size: 9 },
+                  color: "#231815",
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // ==========================================
+</script>

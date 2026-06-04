@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kopickup POS - Secure Login</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Poppins:wght@200;300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <!-- FontAwesome Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Tailwind Config -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              creamLatte: "#F2E8D8",
+              coffeeBean: "#4B2E24",
+              espressoBlack: "#231815",
+              terracotta: "#B66A3C",
+              forestGreen: "#4F6A47",
+              goldSand: "#C49A4A",
+            },
+            fontFamily: {
+              serif: ['"Cormorant Garamond"', "serif"],
+              sans: ["Poppins", "sans-serif"],
+            },
+            borderRadius: { button: "12px", card: "16px" },
+            boxShadow: { soft: "0px 8px 24px rgba(35, 24, 21, 0.08)" },
+          },
+        },
+      };
+    </script>
+    <?!= include('index-css'); ?>
+  </head>
+  <body
+    class="flex flex-col min-h-screen bg-creamLatte selection:bg-coffeeBean selection:text-creamLatte"
+  >
+    <!-- TOP CHECKERBOARD ACCENT BORDER -->
+    <div class="checkerboard-border w-full opacity-90 shrink-0"></div>
+
+    <!-- MAIN LOADING SPINNER -->
+    <div
+      id="app-loading"
+      class="hidden fixed inset-0 bg-espressoBlack/60 backdrop-blur-sm z-[200] flex flex-col items-center justify-center space-y-6"
+    >
+      <div
+        class="w-16 h-16 border-4 border-creamLatte/30 border-t-terracotta rounded-full animate-spin"
+      ></div>
+      <h2
+        class="cormorant-brand text-3xl font-bold text-creamLatte"
+        id="loading-text"
+      >
+        Memproses...
+      </h2>
+    </div>
+
+    <!-- AUTH / LOGIN VIEW -->
+    <div id="view-login" class="flex flex-grow items-center justify-center p-4">
+      <div
+        class="w-full max-w-md bg-creamLatte/55 backdrop-blur-md border border-coffeeBean/10 p-8 rounded-card shadow-soft relative overflow-hidden"
+      >
+        <div
+          class="absolute -top-12 -right-12 w-28 h-28 border-4 border-terracotta/20 rounded-full"
+        ></div>
+
+        <!-- Brand Logo / Identity Header -->
+        <div class="text-center mb-8 relative">
+          <div
+            class="inline-flex items-center justify-center w-16 h-16 bg-coffeeBean rounded-full text-creamLatte text-3xl mb-3 shadow-md"
+          >
+            <i class="fa-solid fa-truck-pickup"></i>
+          </div>
+          <h1
+            class="cormorant-brand text-4xl font-extrabold text-coffeeBean tracking-wide"
+          >
+            KOPICKUP
+          </h1>
+          <p
+            class="text-xs uppercase tracking-widest text-terracotta font-semibold mt-1"
+          >
+            Artisan Ethnic Coffee POS
+          </p>
+        </div>
+
+        <!-- Traditional Login Form -->
+        <div class="space-y-4">
+          <div>
+            <label
+              for="login-email"
+              class="block text-xs font-bold uppercase tracking-wider text-coffeeBean mb-1.5"
+              >Email Karyawan</label
+            >
+            <div class="relative">
+              <span
+                class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-coffeeBean/50"
+                ><i class="fa-regular fa-envelope"></i
+              ></span>
+              <input
+                type="email"
+                id="login-email"
+                placeholder="nama@kopickup.com"
+                class="w-full pl-10 pr-4 py-3 bg-creamLatte border border-coffeeBean/25 rounded-button focus:outline-none focus:ring-2 focus:ring-coffeeBean/50 text-sm font-medium transition"
+              />
+            </div>
+          </div>
+          <div>
+            <label
+              for="login-password"
+              class="block text-xs font-bold uppercase tracking-wider text-coffeeBean mb-1.5"
+              >Password</label
+            >
+            <div class="relative">
+              <span
+                class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-coffeeBean/50"
+                ><i class="fa-solid fa-lock"></i
+              ></span>
+              <input
+                type="password"
+                id="login-password"
+                placeholder="••••••••"
+                class="w-full pl-10 pr-4 py-3 bg-creamLatte border border-coffeeBean/25 rounded-button focus:outline-none focus:ring-2 focus:ring-coffeeBean/50 text-sm font-medium transition"
+              />
+            </div>
+          </div>
+
+          <div
+            id="login-message"
+            class="text-center text-xs font-bold text-red-500 min-h-[16px]"
+          ></div>
+
+          <div class="flex space-x-2">
+            <button
+              onclick="submitLogin()"
+              class="flex-grow py-3.5 bg-coffeeBean hover:bg-espressoBlack text-creamLatte font-semibold rounded-button shadow-md transition duration-200 text-sm uppercase tracking-wider"
+            >
+              Login
+            </button>
+            <button
+              onclick="submitRegister()"
+              class="flex-grow py-3.5 bg-creamLatte hover:bg-coffeeBean/10 text-coffeeBean border border-coffeeBean/30 font-semibold rounded-button transition duration-200 text-sm uppercase tracking-wider"
+            >
+              Register
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auto-Refresh Trigger for doGet Routing -->
+    <a
+      style="display: none"
+      id="myid"
+      href="<?= ScriptApp.getService().getUrl(); ?>"
+      target="_top"
+    ></a>
+
+    <?!= include('index-js'); ?>
+  </body>
+</html>
